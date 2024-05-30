@@ -786,14 +786,19 @@ class Colormaps():
         self.turbo  = LinearSegmentedColormap.from_list("turbo", self.turbo_rgb, N=256) 
         self.abyss  = LinearSegmentedColormap.from_list("abyss", self.abyss_rgb, N=256) 
         self.grayblue = LinearSegmentedColormap.from_list("grayblue", self.grayblue_rgb, N=256)
+
 class Colorcycles():
     """
         _summary_
-        Discretized color lists for use in general plotting
+        Discretized color lists for use in general line plotting
     """
     def __init__(self):
         self.parula = ["#F5E31E", "#FEC03A", "#D2BB58", "#9BBF6F", "#54BD8E", "#17B2B2", "#06A0CD", "#1484D5", "#036AE1", "#353EAF"]
-        
+        self.matlab = ["#0072BD", "#D95319", "#EDB120", "#7E2F8E", "#77AC30", "#4DBEEE", "#A2142F"]
+        self.nature = ["#E64B35", "#4DBBD5", "#00A087", "#3C5488", "#F39B7F", "#8491B4", "#91D1C2", "#DC0000", "#7E6148", "#B09C85"]
+        self.forest = ["#1F2F10", "#6C8C08", "#C4B671", "#E4E8DD", "#9F7D5D", "#463A2C"]
+        self.div_bg = ["#543005", "#8D5109", "#C0822D", "#E1C37D", "#F8E9C4", "#C8EBE6", "#80CEC2", "#359890", "#01665E", "#003C30"]
+        self.div_op = ["#7F3B07", "#B45806", "#E18313", "#FEB963", "#FFE1B7", "#D9DBED", "#B3ACD3", "#8073AD", "#542789", "#2D004B"]
 if __name__ == "__main__":
     cm = Colormaps()
     cm.grayblue
