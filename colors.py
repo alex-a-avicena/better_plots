@@ -1,4 +1,8 @@
-from matplotlib.colors import LinearSegmentedColormap
+from matplotlib import colormaps
+from matplotlib.colors import LinearSegmentedColormap, rgb2hex
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import numpy as np
 
 class Colormaps():
     """
@@ -786,6 +790,21 @@ class Colormaps():
         self.turbo  = LinearSegmentedColormap.from_list("turbo", self.turbo_rgb, N=256) 
         self.abyss  = LinearSegmentedColormap.from_list("abyss", self.abyss_rgb, N=256) 
         self.grayblue = LinearSegmentedColormap.from_list("grayblue", self.grayblue_rgb, N=256)
+        self.magma = colormaps["magma"]
+        self.plasma = colormaps["plasma"]
+        self.inferno = colormaps["inferno"]
+        self.viridis = colormaps["viridis"]
+        
+        self.maps = {
+                        "parula":self.parula,
+                        "turbo":self.turbo,
+                        "abyss":self.abyss,
+                        "gray-blue":self.grayblue,
+                        "magma":self.magma, 
+                        "plasma":self.plasma,
+                        "inferno":self.inferno,
+                        "viridis":self.viridis
+                    }
 
 class Colorcycles():
     """
@@ -793,12 +812,57 @@ class Colorcycles():
         Discretized color lists for use in general line plotting
     """
     def __init__(self):
-        self.parula = ["#F5E31E", "#FEC03A", "#D2BB58", "#9BBF6F", "#54BD8E", "#17B2B2", "#06A0CD", "#1484D5", "#036AE1", "#353EAF"]
-        self.matlab = ["#0072BD", "#D95319", "#EDB120", "#7E2F8E", "#77AC30", "#4DBEEE", "#A2142F"]
-        self.nature = ["#E64B35", "#4DBBD5", "#00A087", "#3C5488", "#F39B7F", "#8491B4", "#91D1C2", "#DC0000", "#7E6148", "#B09C85"]
-        self.forest = ["#1F2F10", "#6C8C08", "#C4B671", "#E4E8DD", "#9F7D5D", "#463A2C"]
-        self.div_bg = ["#543005", "#8D5109", "#C0822D", "#E1C37D", "#F8E9C4", "#C8EBE6", "#80CEC2", "#359890", "#01665E", "#003C30"]
-        self.div_op = ["#7F3B07", "#B45806", "#E18313", "#FEB963", "#FFE1B7", "#D9DBED", "#B3ACD3", "#8073AD", "#542789", "#2D004B"]
+        self.cycles = {
+        "parula":["#F5E31E", "#FEC03A", "#D2BB58", "#9BBF6F", "#54BD8E", "#17B2B2", "#06A0CD", "#1484D5", "#036AE1", "#353EAF"],
+        "matlab":["#0072BD", "#D95319", "#EDB120", "#7E2F8E", "#77AC30", "#4DBEEE", "#A2142F"],
+        "nature":["#E64B35", "#4DBBD5", "#00A087", "#3C5488", "#F39B7F", "#8491B4", "#91D1C2", "#DC0000", "#7E6148", "#B09C85"],
+        "forest":["#1F2F10", "#6C8C08", "#C4B671", "#D4D8CD", "#9F7D5D", "#463A2C"],
+        "diverging-brown-teal":["#543005", "#8D5109", "#C0822D", "#E1C37D", "#F8E9C4", "#C8EBE6", "#80CEC2", "#359890", "#01665E", "#003C30"],
+        "diverging-orange-purple":["#7F3B07", "#B45806", "#E18313", "#FEB963", "#FFE1B7", "#D9DBED", "#B3ACD3", "#8073AD", "#542789", "#2D004B"],
+        "diverging-red-blue":["#67001F", "#B3172B", "#D7604D", "#F5A683", "#FEDCC8", "#D2E6F1", "#93C6E0", "#4394C4", "#2166AD", "#053061"],
+        "rainbow":["#151445", "#276475", "#3d8d8f", "#21967d", "#15ad59", "#7aa138", "#c7a124", "#bf7934", "#a1342a", "#781466", "#420363"]
+        }
+
+def plot_demo():
+    c = Colorcycles()
+    cycles = list(c.cycles.keys())
+    m = len(cycles)
+    fig, ax = plt.subplots(m, 1, figsize=(8, 8))
+    # Create a rectangle patch
+    for i in range(m):
+        colors = c.cycles[cycles[i]]
+        ax[i].set_title(f"'{cycles[i]}'")
+        ax[i].axis('off')
+        ax[i].set_aspect(0.1)
+        for color in colors:
+            index = colors.index(color)
+            rect = patches.Rectangle((index*0.1, 0.1), 0.1, 1, facecolor=color, edgecolor='none')
+            ax[i].add_patch(rect)
+        # plt.autoscale(tight=True)
+    plt.tight_layout(rect=[0, 0, 1, 1])
+    plt.show()
+    
+def colormap_demo():
+    c = Colormaps()
+    maps = list(c.maps.keys())
+    m = len(maps)
+    fig, ax = plt.subplots(m, 1, figsize=(8, 8))
+    # Create a rectangle patch
+    for i in range(m):
+        cmap = (c.maps[maps[i]])
+        ax[i].set_title(f"'{maps[i]}'")
+        ax[i].axis('off')
+        ax[i].set_aspect(0.1)
+        x = np.linspace(0, 1, 256)
+        for index in range(256):
+            color = cmap(x[index])
+            rect = patches.Rectangle((index*(1/256), (1/256)), 0.1, 1, facecolor=color, edgecolor='none')
+            ax[i].add_patch(rect)
+        # plt.autoscale(tight=True)
+    plt.tight_layout(rect=[0, 0, 1, 1])
+    plt.show()
+    
 if __name__ == "__main__":
-    cm = Colormaps()
-    cm.grayblue
+    plot_demo()
+    colormap_demo()
+    
