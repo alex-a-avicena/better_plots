@@ -785,11 +785,13 @@ class Colormaps():
                                 (0.1490, 0.5490, 0.8660)
                             ]
         self.grayblue_rgb = ["#93b6bd", "#0dd9d5", "#06aacf", "#0a7ec7", "#0747ad", "#070ca3"]
+        self.yellow_green_rgb = ["#FDFD96", "#FEE76A", "#FFD036", "#FFBC02", "#FFAA02", "#FF9801", "#A99441", "#568550", "#05734A", "#055F3D", "#024B30"]
         
         self.parula = LinearSegmentedColormap.from_list("parula", self.parula_rgb, N=256) 
         self.turbo  = LinearSegmentedColormap.from_list("turbo", self.turbo_rgb, N=256) 
         self.abyss  = LinearSegmentedColormap.from_list("abyss", self.abyss_rgb, N=256) 
         self.grayblue = LinearSegmentedColormap.from_list("grayblue", self.grayblue_rgb, N=256)
+        self.yellow_green = LinearSegmentedColormap.from_list("grayblue", self.yellow_green_rgb, N=256)
         self.magma = colormaps["magma"]
         self.plasma = colormaps["plasma"]
         self.inferno = colormaps["inferno"]
@@ -803,7 +805,8 @@ class Colormaps():
                         "magma":self.magma, 
                         "plasma":self.plasma,
                         "inferno":self.inferno,
-                        "viridis":self.viridis
+                        "viridis":self.viridis,
+                        "yellow-green":self.yellow_green
                     }
 
 class Colorcycles():
@@ -820,7 +823,8 @@ class Colorcycles():
         "diverging-brown-teal":["#543005", "#8D5109", "#C0822D", "#E1C37D", "#F8E9C4", "#C8EBE6", "#80CEC2", "#359890", "#01665E", "#003C30"],
         "diverging-orange-purple":["#7F3B07", "#B45806", "#E18313", "#FEB963", "#FFE1B7", "#D9DBED", "#B3ACD3", "#8073AD", "#542789", "#2D004B"],
         "diverging-red-blue":["#67001F", "#B3172B", "#D7604D", "#F5A683", "#FEDCC8", "#D2E6F1", "#93C6E0", "#4394C4", "#2166AD", "#053061"],
-        "rainbow":["#151445", "#276475", "#3d8d8f", "#21967d", "#15ad59", "#7aa138", "#c7a124", "#bf7934", "#a1342a", "#781466", "#420363"]
+        "rainbow":["#151445", "#276475", "#3d8d8f", "#21967d", "#15ad59", "#7aa138", "#c7a124", "#bf7934", "#a1342a", "#781466", "#420363"],
+        "yellow-green":["#FDFD96", "#FEE76A", "#FFD036", "#FFBC02", "#FFAA02", "#FF9801", "#A99441", "#568550", "#05734A", "#055F3D", "#024B30"]
         }
 
 def plot_demo():
@@ -835,8 +839,9 @@ def plot_demo():
         ax[i].axis('off')
         ax[i].set_aspect(0.1)
         for color in colors:
+            print(color)
             index = colors.index(color)
-            rect = patches.Rectangle((index*0.1, 0.1), 0.1, 1, facecolor=color, edgecolor='none')
+            rect = patches.Rectangle((index*(1/(m+1)), 0), (1/(m+1)), 1, facecolor=color, edgecolor='none')
             ax[i].add_patch(rect)
         # plt.autoscale(tight=True)
     plt.tight_layout(rect=[0, 0, 1, 1])
