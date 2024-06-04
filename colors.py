@@ -3,6 +3,17 @@ from matplotlib.colors import LinearSegmentedColormap, rgb2hex
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
+import colorsys
+
+MONOCHROMATIC = 1
+DYADIC = 2
+TRIADIC = 3
+TETRADIC = 4
+PENTADIC = 5
+HEXADIC = 6
+SEPTADIC = 7
+SPLIT = 8
+ANALOGOUS = 9
 
 class Colormaps():
     """
@@ -1108,9 +1119,114 @@ class Colorcycles():
         
 class ColorWheel():
     
-    wheel = ["#F2003C", "#F85900", "#F28800", "#F28800", "#EFCC00", "#F0EA00", "#B1D700", "#00CA24", "#00A877", "#00A78A", "#00A59C", "#00A3AC", "#0093AF", "#0082B2", "#006EBF", "#7D00F8", "#9F00C5", "#B900A6", "#D00081", "#D00081", "#E20064"]
+    def __init__(self):
     
+        self.wheel = ["#F2003C", "#F85900", "#F28800", "#F28800", "#EFCC00", "#F0EA00", "#B1D700", "#00CA24", "#00A877", "#00A78A", "#00A59C", "#00A3AC", "#0093AF", "#0082B2", "#006EBF", "#7D00F8", "#9F00C5", "#B900A6", "#D00081", "#D00081", "#E20064"]
 
+class ColorHarmony():
+    
+    def __init__(self):
+        pass
+        
+    def rgb_compliment(self, seed, mode : int = DYADIC):
+        
+        r = seed[1:3]
+        g = seed[3:5]
+        b = seed[5:7]
+        
+        int_r = int(f"0x{r}", 16)
+        int_g = int(f"0x{g}", 16)
+        int_b = int(f"0x{b}", 16)
+        
+        colors = []
+        if mode <= 7 and mode > 0:
+            if mode == DYADIC:
+                angles = [0, 180]
+                
+            if mode == TRIADIC:
+                # 1 = rgb
+                # 2 = gbr
+                # 3 = brg
+                # colors = [f"#{r}{g}{b}", f"#{g}{b}{r}", f"#{b}{r}{g}"]
+                angles = [0, 120, 240]
+            
+            if mode == TETRADIC:
+                angles = [0, 90, 180, 270]
+
+            if mode == PENTADIC:
+                angles = [0, 72, 144, 216, 288]
+                
+            if mode == HEXADIC:
+                angles = [0, 60, 120, 150, 240, 300]
+                
+            if mode == SEPTADIC:
+                angles = [0, (360/7), (2*360/7), (3*360/7), (4*360/7), (5*360/7), (6*360/7)]
+
+            h, s, l = self.rgb_to_hsl(int_r, int_g, int_b)
+            for angle in angles:
+                tetradic_hue = (h + angle) % 360
+                tet_r, tet_g, tet_b = self.hsl_to_rgb(tetradic_hue, s, l)
+                rgb = f"#{hex(tet_r)[2:].zfill(2)}{hex(tet_g)[2:].zfill(2)}{hex(tet_b)[2:].zfill(2)}"
+                colors.append(rgb)  
+    
+        elif mode == SPLIT:
+            h, s, l = self.rgb_to_hsl(int_r, int_g, int_b)
+            complement_h = (h + 180) % 360
+            split1_h = (complement_h - 30) % 360
+            split2_h = (complement_h + 30) % 360
+            
+            split1_r, split1_g, split1_b = self.hsl_to_rgb(split1_h, s, l)
+            split2_r, split2_g, split2_b = self.hsl_to_rgb(split2_h, s, l)
+            
+            split1_rgb = f"#{hex(split1_r)[2:].zfill(2)}{hex(split1_g)[2:].zfill(2)}{hex(split1_b)[2:].zfill(2)}"
+            split2_rgb = f"#{hex(split2_r)[2:].zfill(2)}{hex(split2_g)[2:].zfill(2)}{hex(split2_b)[2:].zfill(2)}"
+            
+            colors = [seed, split1_rgb, split2_rgb]
+            
+        return colors
+            
+    def rgb_to_hsl(self, r, g, b):
+        r, g, b = r/255, g/255, b/255
+        mx = max(r, g, b)
+        mn = min(r, g, b)
+        df = mx-mn
+        if mx == mn:
+            h = 0
+        elif mx == r:
+            h = (60 * ((g-b)/df) + 360) % 360
+        elif mx == g:
+            h = (60 * ((b-r)/df) + 120) % 360
+        elif mx == b:
+            h = (60 * ((r-g)/df) + 240) % 360
+        if mx == 0:
+            s = 0
+        else:
+            s = (df/mx)*100
+        l = ((mx+mn)/2)*100
+        return h, s, l
+
+    def hsl_to_rgb(self, h, s, l):
+        s /= 100
+        l /= 100
+        c = (1 - abs(2 * l - 1)) * s
+        x = c * (1 - abs((h / 60) % 2 - 1))
+        m = l - c/2
+        r, g, b = (0, 0, 0)
+        if 0 <= h < 60:
+            r, g, b = c, x, 0
+        elif 60 <= h < 120:
+            r, g, b = x, c, 0
+        elif 120 <= h < 180:
+            r, g, b = 0, c, x
+        elif 180 <= h < 240:
+            r, g, b = 0, x, c
+        elif 240 <= h < 300:
+            r, g, b = x, 0, c
+        else:
+            r, g, b = c, 0, x
+        r, g, b = (int((r+m)*255), int((g+m)*255), int((b+m)*255))
+        return r, g, b
+    
 def plot_demo():
     c = Colorcycles()
     cycles = list(c.cycles.keys())
@@ -1123,7 +1239,6 @@ def plot_demo():
         ax[i].axis('off')
         ax[i].set_aspect(0.1)
         for color in colors:
-            print(color)
             index = colors.index(color)
             rect = patches.Rectangle((index*(1/len(colors)), 0), (1/len(colors)), 1, facecolor=color, edgecolor='none')
             ax[i].add_patch(rect)
@@ -1151,7 +1266,28 @@ def colormap_demo():
     plt.tight_layout(rect=[0, 0, 1, 1])
     plt.show()
     
+def plot_compliments():
+    c = ColorHarmony()
+    fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+    # Create a rectangle patch
+    ax.axis('off')
+    ax.set_aspect(0.1)
+    colors = c.rgb_compliment(seed = "#58857a", mode=SEPTADIC)
+    for color in colors:
+        print(color)
+        index = colors.index(color)
+        rect = patches.Rectangle((index*(1/len(colors)), 0), (1/len(colors)), 1, facecolor=color, edgecolor='none')
+        ax.add_patch(rect)
+    # plt.autoscale(tight=True)
+    plt.tight_layout(rect=[0, 0, 1, 1])
+    plt.show()
+    
 if __name__ == "__main__":
     plot_demo()
     colormap_demo()
+    plot_compliments()
+    # c = ColorHarmony()
     
+    # h, s, l = c.rgb_to_hsl(0xaa, 0xbb, 0xcc)
+    # r, g, b = c.hsl_to_rgb(h, s, l)
+    # print(hex(r), hex(g), hex(b))
