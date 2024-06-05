@@ -3,17 +3,29 @@ from matplotlib.colors import LinearSegmentedColormap, rgb2hex
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
-import colorsys
+import warnings
 
-MONOCHROMATIC = 1
+from typing import Optional, Union
+
+
 DYADIC = 2
 TRIADIC = 3
 TETRADIC = 4
 PENTADIC = 5
 HEXADIC = 6
 SEPTADIC = 7
-SPLIT = 8
-ANALOGOUS = 9
+
+MONOCHROMATIC = "monochromatic"
+COMPLIMENTARY = "complimentary"
+ANALOGOUS = "analogous"
+SPACED = "spaced"
+SPLIT = "split"
+
+DARK = "dark"
+LIGHT = "light"
+FULL = "full"
+EVEN = "even"
+BRIGHT = "bright"
 
 class Colormaps():
     """
@@ -1102,6 +1114,9 @@ class Colorcycles():
         self.cycles = {
         "parula":["#F5E31E", "#FEC03A", "#D2BB58", "#9BBF6F", "#54BD8E", "#17B2B2", "#06A0CD", "#1484D5", "#036AE1", "#353EAF"],
         "matlab":["#0072BD", "#D95319", "#EDB120", "#7E2F8E", "#77AC30", "#4DBEEE", "#A2142F"],
+        "ibm":["#648fff", "#785ef0", "#dc267f", "#fe6100", "#ffb000"],
+        "wong":["#000000", "#e69f00", "#56b4e9", "#009e73", "#f0e442", "#0072b2", "#d55e00", "#cc79a7"],
+        "tol":["#332288", "#117733", "#44aa99", "#88ccee", "#ddcc77", "#cc6677", "#aa4499", "#882255"],
         "solstice":["#3892A5", "#FFBA00", "#C62B2B", "#84AA33", "#944200", "#42598C"],
         "concourse":["#2BA2BD", "#DE1C2B", "#EF6515", "#38609C", "#42487B", "#7B3D4A"],
         "aspect":["#F77D00", "#382733", "#15597B", "#4A8642", "#63487B", "#C69A5A"],
@@ -1127,64 +1142,153 @@ class ColorHarmony():
     
     def __init__(self):
         pass
+    
+    def palette(self, seed : Union[str, int, tuple[int, int, int], tuple[float, float, float]] = "#039494", n : int = 3, mode : str = COMPLIMENTARY, spacing : Optional[float] = 30, harmony : Optional[int] = TRIADIC, monochrome : Optional[str] = DARK):
+        """_summary_
+
+        Args:
+            seed (Union[str, int, tuple[int, int, int], tuple[float, float, float]], optional): _description_. Defaults to "#039494". Seed color upon which the returned color palette is based.
+            n (int, optional): Defaults to 3. Number of colors contained in the returned palette. NOTE: colors may be cyclical, i.e. choosing n = 6 and TRIADIC harmony results in a palette containing three distinct colors repeated twice.
+            mode (str, optional): Defaults to COMPLIMENTARY. Defines palette mode. Options are 'MONOCHROMATIC', 'COMPLIMENTARY', 'ANALOGOUS', 'SPLIT', and 'SPACED'.
+            spacing (Optional[float], optional): Defaults to 30. Angular spacing value (degrees) for 'SPACED' mode.
+            harmony (Optional[int], optional): Defaults to TRIADIC. Options are 'DYADIC', 'TRIADIC', 'TETRADIC', 'PENTADIC', 'HEXADIC', and 'SEPTADIC'
+            monochrome (Optional[str], optional): Defaults to DARK. Options are 'DARK', 'LIGHT', 'FULL', 'EVEN', and 'BRIGHT'
+
+        Raises:
+            ColorError: _description_
+        """
         
-    def rgb_compliment(self, seed, mode : int = DYADIC):
-        
-        r = seed[1:3]
-        g = seed[3:5]
-        b = seed[5:7]
-        
-        int_r = int(f"0x{r}", 16)
-        int_g = int(f"0x{g}", 16)
-        int_b = int(f"0x{b}", 16)
-        
-        colors = []
-        if mode <= 7 and mode > 0:
-            if mode == DYADIC:
-                angles = [0, 180]
-                
-            if mode == TRIADIC:
-                # 1 = rgb
-                # 2 = gbr
-                # 3 = brg
-                # colors = [f"#{r}{g}{b}", f"#{g}{b}{r}", f"#{b}{r}{g}"]
-                angles = [0, 120, 240]
+        if type(seed) == str:
             
-            if mode == TETRADIC:
-                angles = [0, 90, 180, 270]
+            if seed[0] == "#":
 
-            if mode == PENTADIC:
-                angles = [0, 72, 144, 216, 288]
+                int_r = int(f"0x{seed[1:3]}", 16)
+                int_g = int(f"0x{seed[3:5]}", 16)
+                int_b = int(f"0x{seed[5:7]}", 16)
                 
-            if mode == HEXADIC:
-                angles = [0, 60, 120, 150, 240, 300]
+            else:
+                raise ColorError(f"'{seed}' is not recognized as a valid RGB color")
+        
+        elif type(seed) == int:
+            
+            seed_bytes = seed.to_bytes(3, byteorder='big', signed=False)
+            int_r = seed_bytes[0]
+            int_g = seed_bytes[1]
+            int_b = seed_bytes[2]
+            
+        elif type(seed) == tuple[int, int, int]:
+            
+            int_r = seed[0]
+            int_g = seed[1]
+            int_b = seed[2]
+            
+        elif type(seed) == tuple[float, float, float]:
+            
+            int_r = round(seed[0] * 255)
+            int_g = round(seed[1] * 255)
+            int_b = round(seed[2] * 255)     
+            
+        else:
+            return
+        
+        if type(harmony) == str:
+            harmony = harmony.lower()
+            harmonies = [DYADIC, TRIADIC, TETRADIC, PENTADIC, HEXADIC, SEPTADIC]
+            if harmony not in harmonies:
+                warnings.warn(f"'{harmony}' is not a recognized harmony setting. Defaulting to {TRIADIC}.")
+                harmony = TRIADIC
+        
+        h, s, l = self.rgb_to_hsl(int_r, int_g, int_b)
+        
+        if mode == COMPLIMENTARY or mode == ANALOGOUS or mode == SPACED:
+            if mode == COMPLIMENTARY:
                 
-            if mode == SEPTADIC:
-                angles = [0, (360/7), (2*360/7), (3*360/7), (4*360/7), (5*360/7), (6*360/7)]
-
-            h, s, l = self.rgb_to_hsl(int_r, int_g, int_b)
+                if harmony < 0:
+                    harmony = DYADIC
+                elif harmony > 7:
+                    harmony = SEPTADIC
+                factor = range(0, harmony, 1)
+                angles = [i * 360/harmony for i in factor]
+                    
+            if mode == ANALOGOUS:
+                divider = range(0, n, 1)
+                angles = [i * 90/n  for i in divider]
+                
+            if mode == SPACED:
+                divider = range(0, n, 1)
+                if spacing == None:
+                    spacing = 30
+                elif spacing < 1 or spacing > 180:
+                    raise SpacingError(f"{spacing} is not a valid spacing angle. Spacing must be betweein 1 and 180.")
+                
+                angles = [i * spacing  for i in divider]
+                
+            colors = []
             for angle in angles:
                 tetradic_hue = (h + angle) % 360
                 tet_r, tet_g, tet_b = self.hsl_to_rgb(tetradic_hue, s, l)
                 rgb = f"#{hex(tet_r)[2:].zfill(2)}{hex(tet_g)[2:].zfill(2)}{hex(tet_b)[2:].zfill(2)}"
-                colors.append(rgb)  
-    
-        elif mode == SPLIT:
-            h, s, l = self.rgb_to_hsl(int_r, int_g, int_b)
+                colors.append(rgb) 
+                print (angle)
+        
+        if mode == SPLIT:
             complement_h = (h + 180) % 360
             split1_h = (complement_h - 30) % 360
             split2_h = (complement_h + 30) % 360
             
+            base_r, base_g, base_b = self.hsl_to_rgb(h, s, l)
             split1_r, split1_g, split1_b = self.hsl_to_rgb(split1_h, s, l)
             split2_r, split2_g, split2_b = self.hsl_to_rgb(split2_h, s, l)
             
+            base_rgb = f"#{hex(base_r)[2:].zfill(2)}{hex(base_g)[2:].zfill(2)}{hex(base_b)[2:].zfill(2)}"
             split1_rgb = f"#{hex(split1_r)[2:].zfill(2)}{hex(split1_g)[2:].zfill(2)}{hex(split1_b)[2:].zfill(2)}"
             split2_rgb = f"#{hex(split2_r)[2:].zfill(2)}{hex(split2_g)[2:].zfill(2)}{hex(split2_b)[2:].zfill(2)}"
             
-            colors = [seed, split1_rgb, split2_rgb]
+            colors = [base_rgb, split1_rgb, split2_rgb]
             
-        return colors
-            
+        if mode == MONOCHROMATIC:
+            colors = []
+            if monochrome == EVEN:
+                max_val = max(int_r, int_g, int_b)
+                rel_r = int_r / max_val
+                rel_g = int_g / max_val
+                rel_b = int_b / max_val
+                int_r = int(rel_r*127)
+                int_g = int(rel_g*127)
+                int_b = int(rel_b*127)
+                monochrome = FULL
+            if monochrome == DARK:
+                for i in range(n):
+                    color = f"#{hex(int(int_r*((i+1)/n)))[2:].zfill(2)}{hex(int(int_g*((i+1)/n)))[2:].zfill(2)}{hex(int(int_b*((i+1)/n)))[2:].zfill(2)}"
+                    colors.append(color)
+            elif monochrome == LIGHT:
+                for i in range(n):
+                    color = f"#{hex(int(int_r + (255-int_r)*((i)/n)))[2:].zfill(2)}{hex(int(int_g + (255-int_g)*((i)/n)))[2:].zfill(2)}{hex(int(int_b + (255-int_b)*((i)/n)))[2:].zfill(2)}"
+                    colors.append(color)
+            elif monochrome == FULL:
+                m = int(n/2)
+                if n % 2 == 0:
+                    m -= 1
+                for i in range(m):
+                    color = f"#{hex(int(int_r*((i+1)/(m+1))))[2:].zfill(2)}{hex(int(int_g*((i+1)/(m+1))))[2:].zfill(2)}{hex(int(int_b*((i+1)/(m+1))))[2:].zfill(2)}"
+                    colors.append(color)
+                colors.append(f"#{hex(int_r)[2:].zfill(2)}{hex(int_g)[2:].zfill(2)}{hex(int_b)[2:].zfill(2)}")
+                if n % 2 == 0:
+                    m += 1
+                for i in range(m):
+                    color = f"#{hex(int(int_r + (255-int_r)*((i+1)/(m+1))))[2:].zfill(2)}{hex(int(int_g + (255-int_g)*((i+1)/(m+1))))[2:].zfill(2)}{hex(int(int_b + (255-int_b)*((i+1)/(m+1))))[2:].zfill(2)}"
+                    colors.append(color)
+            elif monochrome == BRIGHT:
+                max_val = max(int_r, int_g, int_b)
+                rel_r = int_r / max_val
+                rel_g = int_g / max_val
+                rel_b = int_b / max_val
+                for i in range(n):
+                    color = f"#{hex(int(rel_r*((i+1)/(n))*255))[2:].zfill(2)}{hex(int(rel_g*((i+1)/(n))*255))[2:].zfill(2)}{hex(int(rel_b*((i+1)/(n))*255))[2:].zfill(2)}"
+                    colors.append(color)
+        
+        return (colors)
+             
     def rgb_to_hsl(self, r, g, b):
         r, g, b = r/255, g/255, b/255
         mx = max(r, g, b)
@@ -1224,9 +1328,15 @@ class ColorHarmony():
             r, g, b = x, 0, c
         else:
             r, g, b = c, 0, x
-        r, g, b = (int((r+m)*255), int((g+m)*255), int((b+m)*255))
+        r, g, b = (round((r+m)*255), round((g+m)*255), round((b+m)*255))
         return r, g, b
-    
+
+class ColorError(Exception):
+    """Undefined color"""
+
+class SpacingError(Exception):
+    """Unrecognized color spacing"""
+  
 def plot_demo():
     c = Colorcycles()
     cycles = list(c.cycles.keys())
@@ -1272,7 +1382,9 @@ def plot_compliments():
     # Create a rectangle patch
     ax.axis('off')
     ax.set_aspect(0.1)
-    colors = c.rgb_compliment(seed = "#58857a", mode=SEPTADIC)
+    # colors = c.palette(seed = "#039494", n=10, harmony=SEPTADIC)
+    # colors = c.palette(seed = "#039494", n=10, mode=MONOCHROMATIC, monochrome=FULL)
+    colors = c.palette(seed = "#051b40", n=10, mode=MONOCHROMATIC, monochrome=FULL)
     for color in colors:
         print(color)
         index = colors.index(color)
@@ -1282,12 +1394,158 @@ def plot_compliments():
     plt.tight_layout(rect=[0, 0, 1, 1])
     plt.show()
     
+def plot_harmony():
+    c = ColorHarmony()
+    cycles = []
+    modes = [DYADIC, TRIADIC, TETRADIC, PENTADIC, HEXADIC, SEPTADIC]
+    mode_names = ['DYADIC', 'TRIADIC', 'TETRADIC', 'PENTADIC', 'HEXADIC', 'SEPTADIC']
+    for pltmode in modes:
+        cycles.append(c.palette(seed = "#039494", harmony=pltmode, mode=COMPLIMENTARY))
+    m = len(cycles) + 1
+    fig, ax = plt.subplots(m, 1, figsize=(8, 8))
+    # Create a rectangle patch
+    ax[0].set_title(f"'seed' = #039494, 'mode' = 'complimentary'")
+    ax[0].axis('off')
+    ax[0].set_aspect(0.1)
+    rect = patches.Rectangle((0, 0), (1/10), 1, facecolor="#039494", edgecolor='none')
+    ax[0].add_patch(rect)
+    for i in range(1, m):
+        print(i)
+        colors = cycles[i-1]
+        ax[i].set_title(f"'harmony' = '{mode_names[i-1]}'")
+        ax[i].axis('off')
+        ax[i].set_aspect(0.1)
+        for color in colors:
+            index = colors.index(color)
+            rect = patches.Rectangle((index*(1/len(colors)), 0), (1/len(colors)), 1, facecolor=color, edgecolor='none')
+            ax[i].add_patch(rect)
+        # plt.autoscale(tight=True)
+    plt.tight_layout(rect=[0, 0, 1, 1])
+    plt.show()
+    
+def plot_analogous():
+    c = ColorHarmony()
+    cycles = []
+    modes = [2, 3, 4, 5, 6]
+    for pltmode in modes:
+        cycles.append(c.palette(seed = "#039494", n=pltmode, mode=ANALOGOUS))
+    m = len(cycles) + 1
+    fig, ax = plt.subplots(m, 1, figsize=(8, 8))
+    # Create a rectangle patch
+    ax[0].set_title(f"'seed' = #039494, 'mode' = 'analogous'")
+    ax[0].axis('off')
+    ax[0].set_aspect(0.1)
+    rect = patches.Rectangle((0, 0), (1/10), 1, facecolor="#039494", edgecolor='none')
+    ax[0].add_patch(rect)
+    for i in range(1, m):
+        print(i)
+        colors = cycles[i-1]
+        ax[i].set_title(f"'n' = '{modes[i-1]}'")
+        ax[i].axis('off')
+        ax[i].set_aspect(0.1)
+        for color in colors:
+            index = colors.index(color)
+            rect = patches.Rectangle((index*(1/len(colors)), 0), (1/len(colors)), 1, facecolor=color, edgecolor='none')
+            ax[i].add_patch(rect)
+        # plt.autoscale(tight=True)
+    plt.tight_layout(rect=[0, 0, 1, 1])
+    plt.show()
+    
+def plot_spaced():
+    c = ColorHarmony()
+    cycles = []
+    modes = [10, 20, 30, 40, 50]
+    for pltmode in modes:
+        cycles.append(c.palette(seed = "#039494", n=7, mode=SPACED, spacing=pltmode))
+    m = len(cycles) + 1
+    fig, ax = plt.subplots(m, 1, figsize=(8, 8))
+    # Create a rectangle patch
+    ax[0].set_title(f"'seed' = #039494, 'mode' = 'spaced', 'n' = 7")
+    ax[0].axis('off')
+    ax[0].set_aspect(0.1)
+    rect = patches.Rectangle((0, 0), (1/10), 1, facecolor="#039494", edgecolor='none')
+    ax[0].add_patch(rect)
+    for i in range(1, m):
+        print(i)
+        colors = cycles[i-1]
+        ax[i].set_title(f"'spacing' = '{modes[i-1]}'")
+        ax[i].axis('off')
+        ax[i].set_aspect(0.1)
+        for color in colors:
+            index = colors.index(color)
+            rect = patches.Rectangle((index*(1/len(colors)), 0), (1/len(colors)), 1, facecolor=color, edgecolor='none')
+            ax[i].add_patch(rect)
+        # plt.autoscale(tight=True)
+    plt.tight_layout(rect=[0, 0, 1, 1])
+    plt.show()
+    
+def plot_monochrome():
+    c = ColorHarmony()
+    cycles = []
+    modes = [DARK, FULL, EVEN, LIGHT, BRIGHT]
+    for pltmode in modes:
+        cycles.append(c.palette(seed = "#039494", n=10, mode=MONOCHROMATIC, monochrome=pltmode))
+    m = len(cycles) + 1
+    fig, ax = plt.subplots(m, 1, figsize=(8, 8))
+    # Create a rectangle patch
+    ax[0].set_title(f"'seed' = #039494, 'n' = 10")
+    ax[0].axis('off')
+    ax[0].set_aspect(0.1)
+    rect = patches.Rectangle((0, 0), (1/10), 1, facecolor="#039494", edgecolor='none')
+    ax[0].add_patch(rect)
+    for i in range(1, m):
+        print(i)
+        colors = cycles[i-1]
+        ax[i].set_title(f"'monochrome' = '{modes[i-1]}'")
+        ax[i].axis('off')
+        ax[i].set_aspect(0.1)
+        for color in colors:
+            index = colors.index(color)
+            rect = patches.Rectangle((index*(1/len(colors)), 0), (1/len(colors)), 1, facecolor=color, edgecolor='none')
+            ax[i].add_patch(rect)
+        # plt.autoscale(tight=True)
+    plt.tight_layout(rect=[0, 0, 1, 1])
+    plt.show()
+    
+def full_v_even():
+    c = ColorHarmony()
+    cycles = []
+    modes = [FULL, EVEN]
+    for pltmode in modes:
+        cycles.append(c.palette(seed = "#051b40", n=10, mode=MONOCHROMATIC, monochrome=pltmode))
+    m = len(cycles) + 1
+    fig, ax = plt.subplots(m, 1, figsize=(8, 8))
+    # Create a rectangle patch
+    ax[0].set_title(f"'seed' = #051b40, 'n' = 10")
+    ax[0].axis('off')
+    ax[0].set_aspect(0.1)
+    rect = patches.Rectangle((0, 0), (1/10), 1, facecolor="#051b40", edgecolor='none')
+    ax[0].add_patch(rect)
+    for i in range(1, m):
+        print(i)
+        colors = cycles[i-1]
+        ax[i].set_title(f"'monochrome' = '{modes[i-1]}'")
+        ax[i].axis('off')
+        ax[i].set_aspect(0.1)
+        for color in colors:
+            index = colors.index(color)
+            rect = patches.Rectangle((index*(1/len(colors)), 0), (1/len(colors)), 1, facecolor=color, edgecolor='none')
+            ax[i].add_patch(rect)
+        # plt.autoscale(tight=True)
+    plt.tight_layout(rect=[0, 0, 1, 1])
+    plt.show()
+    
 if __name__ == "__main__":
     plot_demo()
     colormap_demo()
-    plot_compliments()
-    # c = ColorHarmony()
-    
+    # # plot_compliments()
+    plot_monochrome()
+    full_v_even()
+    plot_harmony()
+    plot_analogous()
+    plot_spaced()
+    c = ColorHarmony()
+    c.palette()
     # h, s, l = c.rgb_to_hsl(0xaa, 0xbb, 0xcc)
     # r, g, b = c.hsl_to_rgb(h, s, l)
     # print(hex(r), hex(g), hex(b))
